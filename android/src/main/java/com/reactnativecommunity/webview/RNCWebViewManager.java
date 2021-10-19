@@ -1420,7 +1420,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
       String[] acceptTypes = fileChooserParams.getAcceptTypes();
       boolean allowMultiple = fileChooserParams.getMode() == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE;
-      return getModule(mReactContext).startPhotoPickerIntent(filePathCallback, acceptTypes, allowMultiple);
+      boolean captureEnabled = fileChooserParams.isCaptureEnabled();
+      return getModule(mReactContext).startPhotoPickerIntent(filePathCallback, acceptTypes, allowMultiple, captureEnabled);
     }
 
     @Override

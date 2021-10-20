@@ -268,30 +268,48 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   }
 
   @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-  public boolean startPhotoPickerIntent(final ValueCallback<Uri[]> callback, final String[] acceptTypes, final boolean allowMultiple) {
+  public boolean startPhotoPickerIntent(final ValueCallback<Uri[]> callback, final String[] acceptTypes, final boolean allowMultiple, final boolean captureIsEnabled) {
     filePathCallback = callback;
+    Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+    boolean haveCameraPermission = !needsCameraPermission();
+    boolean isImage = acceptsImages(acceptTypes);
+    boolean isVideo = acceptsVideo(acceptTypes);
+    boolean haveIntent = false;
 
-    ArrayList<Parcelable> extraIntents = new ArrayList<>();
-    if (!needsCameraPermission()) {
-      if (acceptsImages(acceptTypes)) {
+    if (captureIsEnabled) {
+      if (haveCameraPermission && isImage) {
+        Intent photoIntent = getPhotoIntent();
+        if (photoIntent != null) {
+          chooserIntent.putExtra(Intent.EXTRA_INTENT, photoIntent);
+          haveIntent = true;
+        }
+      } else if (haveCameraPermission && isVideo) {
+        Intent videoIntent = getVideoIntent();
+        if (videoIntent != null) {
+          chooserIntent.putExtra(Intent.EXTRA_INTENT, videoIntent);
+          haveIntent = true;
+        }
+      }
+    }
+    if (!haveIntent) {
+      ArrayList<Parcelable> extraIntents = new ArrayList<>();
+      if (haveCameraPermission && isImage) {
         Intent photoIntent = getPhotoIntent();
         if (photoIntent != null) {
           extraIntents.add(photoIntent);
         }
       }
-      if (acceptsVideo(acceptTypes)) {
+      if (haveCameraPermission && isVideo) {
         Intent videoIntent = getVideoIntent();
         if (videoIntent != null) {
           extraIntents.add(videoIntent);
         }
       }
+
+      Intent fileSelectionIntent = getFileChooserIntent(acceptTypes, allowMultiple);
+      chooserIntent.putExtra(Intent.EXTRA_INTENT, fileSelectionIntent);
+      chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents.toArray(new Parcelable[]{}));
     }
-
-    Intent fileSelectionIntent = getFileChooserIntent(acceptTypes, allowMultiple);
-
-    Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-    chooserIntent.putExtra(Intent.EXTRA_INTENT, fileSelectionIntent);
-    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents.toArray(new Parcelable[]{}));
 
     if (chooserIntent.resolveActivity(getCurrentActivity().getPackageManager()) != null) {
       getCurrentActivity().startActivityForResult(chooserIntent, PICKER);
